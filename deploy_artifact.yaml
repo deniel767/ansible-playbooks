@@ -1,16 +1,39 @@
+---
 - hosts: target_servers
   become: yes
   tasks:
 
-    - name: update
-      apt: update_cache=yes
+    - name: Update package cache
+      apt:
+        update_cache: yes
 
     - name: Install Nginx
-      apt: name=nginx state=latest
+      apt:
+        name: nginx
+        state: latest
 
+    - name: Read-write git checkout from GitHub
+      ansible.builtin.git:
+        repo: https://github.com/deniel767/sre-project.git
+        dest: /etc/nginx/git
+        version: artifact
+
+    - name: Copy test.html to where index.html is
+      ansible.builtin.command:
+        cmd: cp /etc/nginx/git/test.html /var/www/html
+
+    - name: Remove default index.html
+      ansible.builtin.command:
+        cmd: rm /var/www/html/index.nginx-debian.html
+
+    - name: Rename test.html to index.html
+      ansible.builtin.command:
+        cmd: mv /var/www/html/test.html /var/www/html/index.nginx-debian.html
       notify:
         - restart nginx
 
   handlers:
     - name: restart nginx
-      service: name=nginx state=reloaded
+      service:
+        name: nginx
+        state: reloaded
